@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover"/>
+  <title>P.O.P.S. DIGITAL CINEMA — XL 8K VV</title>
+  <style>
+    :root {
+      --bg: #0a0d14;
+      --fg: #eaf0ff;
+      --accent: #00e5ff;
+      --accent-hot: #ff5c7a;
+      --accent-gold: #ffcf7a;
+      --rim: #1e2a45;
+    }
+    * { box-sizing: border-box; font-family: system-ui, Inter, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--fg); height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 16px; text-align: center; border-bottom: 1px solid var(--rim); }
+    header h1 { margin: 0; font-size: 1.4rem; color: var(--accent); }
+    header p { margin: 4px 0 0; font-size: 0.9rem; color: var(--fg); opacity: 0.7; }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+    video, canvas { width: 90%; max-width: 800px; border-radius: 12px; border: 2px solid var(--rim); background: #000; }
+    .controls { display: flex; gap: 12px; margin-top: 12px; }
+    button { padding: 10px 16px; border: 1px solid var(--rim); border-radius: 8px;
+             background: linear-gradient(180deg,#141a2b,#0f1525); color: var(--fg);
+             cursor: pointer; font-weight: 600; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    footer { text-align: center; font-size: 0.8rem; opacity: 0.6; padding: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>P.O.P.S. DIGITAL CINEMA — XL 8K VV</h1>
+    <p>Moments come and go. P.O.P.S. holds them true.</p>
+  </header>
+  
+  <main>
+    <video id="viewfinder" autoplay playsinline></video>
+    <canvas id="captureCanvas" style="display:none;"></canvas>
+    
+    <div class="controls">
+      <button id="startBtn">🎥 Start Camera</button>
+      <button id="snapBtn">📸 Capture</button>
+      <button id="downloadBtn">💾 Save</button>
+    </div>
+  </main>
+  
+  <footer>
+    Sidekick in light, guardian in time — frame by frame, story by story.
+  </footer>
+
+  <script>
+    const video = document.getElementById("viewfinder");
+    const canvas = document.getElementById("captureCanvas");
+    const ctx = canvas.getContext("2d");
+    const startBtn = document.getElementById("startBtn");
+    const snapBtn = document.getElementById("snapBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    let stream;
+
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 7680 }, height: { ideal: 4320 } }, audio: false });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("Camera access denied or unavailable.");
+      }
+    }
+
+    function captureFrame() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      // Conceptual "XL 8K VV enhancements"
+      let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        // Simulate dynamic range expansion + ND filter balance
+        data[i] = Math.min(255, data[i] * 1.05);     // R
+        data[i+1] = Math.min(255, data[i+1] * 1.05); // G
+        data[i+2] = Math.min(255, data[i+2] * 1.05); // B
+      }
+      ctx.putImageData(imgData, 0, 0);
+      canvas.style.display = "block";
+    }
+
+    function downloadFrame() {
+      const link = document.createElement("a");
+      link.download = "POPS_XL8KVV_Frame.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    startBtn.addEventListener("click", startCamera);
+    snapBtn.addEventListener("click", captureFrame);
+    downloadBtn.addEventListener("click", downloadFrame);
+  </script>
+</body>
+</html>
