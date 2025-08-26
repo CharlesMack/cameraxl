@@ -3,63 +3,289 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>P.O.P.S. DIGITAL CINEMA — XL 8K VV (HUD • Peaking • False Color)</title>
+<title>P.O.P.S. DIGITAL CINEMA — XL 8K VV Strobe 2 (Advanced HUD)</title>
 <style>
   :root{
-    --bg:#0a0d14;--fg:#eaf0ff;--muted:#9aacbf;--rim:#1e2a45;--accent:#00e5ff;--hot:#ff4d6d;--gold:#ffcf7a
+    --bg:#0a0d14;--fg:#eaf0ff;--muted:#9aacbf;--rim:#1e2a45;--accent:#00e5ff;--hot:#ff4d6d;--gold:#ffcf7a;
+    --green:#4ade80;--purple:#a855f7;--orange:#fb7185;--cyan:#22d3ee;--emerald:#10b981;
+    --shadow:rgba(0,229,255,0.15);--glow:0 0 20px var(--shadow);--pulse:pulse 2s ease-in-out infinite;
   }
-  *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif}
-  body{margin:0;background:var(--bg);color:var(--fg);min-height:100dvh;display:flex;flex-direction:column}
-  header{padding:12px 16px;border-bottom:1px solid var(--rim);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  header h1{font-size:1.05rem;margin:0;color:var(--accent);letter-spacing:.3px}
-  header .tag{border:1px solid var(--rim);border-radius:10px;padding:6px 10px;background:linear-gradient(180deg,#141a2b,#0f1525);color:var(--muted)}
-  main{flex:1;display:grid;place-items:center;padding:12px}
-  .stage{position:relative;width:min(92vw,1200px);aspect-ratio:16/9;border:1px solid var(--rim);border-radius:14px;overflow:hidden;background:#000;box-shadow:0 0 0 1px #000 inset}
-  video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-  canvas#paint{position:absolute;inset:0;width:100%;height:100%}
-  /* HUD overlay */
-  .hud{position:absolute;inset:0;pointer-events:none}
-  .hud .safe{position:absolute;inset:6%;border:1px solid rgba(255,255,255,.2)}
-  .hud .thirds{position:absolute;inset:0}
-  .hud .thirds::before,.hud .thirds::after,.hud .thirds span::before,.hud .thirds span::after{
-    content:"";position:absolute;background:rgba(255,255,255,.12)
+  @keyframes pulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+  @keyframes glow { 0%,100%{box-shadow:0 0 10px var(--accent)} 50%{box-shadow:0 0 25px var(--accent)} }
+  @keyframes scan { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
+  @keyframes flicker { 0%,98%,100%{opacity:1} 99%{opacity:.8} }
+  
+  *{box-sizing:border-box;font-family:'JetBrains Mono',Consolas,Monaco,monospace}
+  body{
+    margin:0;background:linear-gradient(135deg,var(--bg) 0%,#0f1419 50%,var(--bg) 100%);
+    color:var(--fg);min-height:100dvh;display:flex;flex-direction:column;
+    background-attachment:fixed;overflow-x:hidden;
   }
-  .hud .thirds::before{left:33.33%;top:0;bottom:0;width:1px}
-  .hud .thirds::after{left:66.66%;top:0;bottom:0;width:1px}
-  .hud .thirds span::before{top:33.33%;left:0;right:0;height:1px}
-  .hud .thirds span::after{top:66.66%;left:0;right:0;height:1px}
-  .hud .center{position:absolute;inset:0;display:grid;place-items:center}
-  .hud .center i{width:10px;height:10px;border:1px solid rgba(255,255,255,.5);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset}
-  .rec{position:absolute;top:10px;left:12px;display:flex;align-items:center;gap:8px;font-weight:700}
-  .dot{width:10px;height:10px;border-radius:50%;background:transparent;outline:1px solid rgba(255,255,255,.4)}
-  .rec.live .dot{background:var(--hot);box-shadow:0 0 12px var(--hot)}
-  .topline{position:absolute;top:10px;right:12px;display:flex;gap:12px}
-  .badge{pointer-events:auto;border:1px solid var(--rim);background:rgba(10,13,20,.55);backdrop-filter:blur(6px);padding:6px 10px;border-radius:10px}
-  .badge strong{color:var(--gold)}
-  .footbar{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-  .group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  label{font-size:.78rem;color:var(--muted)}
-  select,input[type=range],input[type=color],input[type=checkbox]{pointer-events:auto}
+  
+  /* Animated background grid */
+  body::before{
+    content:"";position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size:50px 50px;animation:scan 10s linear infinite;pointer-events:none;
+  }
+  
+  header{
+    padding:16px 20px;border-bottom:2px solid var(--rim);
+    background:linear-gradient(180deg,rgba(30,42,69,0.8),rgba(15,20,37,0.9));
+    backdrop-filter:blur(10px);display:flex;gap:16px;align-items:center;flex-wrap:wrap;
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  }
+  header h1{
+    font-size:1.2rem;margin:0;color:var(--accent);letter-spacing:1px;
+    text-shadow:0 0 10px var(--accent);animation:flicker 3s infinite;
+  }
+  header .tag{
+    border:1px solid var(--rim);border-radius:12px;padding:8px 12px;
+    background:linear-gradient(145deg,#1a2332,#0e1421);color:var(--muted);
+    box-shadow:inset 0 1px 2px rgba(255,255,255,0.1);transition:all 0.3s ease;
+  }
+  header .tag:hover{transform:translateY(-2px);box-shadow:var(--glow);}
+  
+  main{flex:1;display:grid;place-items:center;padding:20px;position:relative;}
+  
+  .stage{
+    position:relative;width:min(95vw,1400px);aspect-ratio:16/9;
+    border:2px solid var(--rim);border-radius:20px;overflow:hidden;
+    background:#000;box-shadow:var(--glow), inset 0 0 50px rgba(0,0,0,0.8);
+    transition:all 0.5s ease;
+  }
+  .stage:hover{box-shadow:0 0 40px var(--accent), inset 0 0 50px rgba(0,0,0,0.8);}
+  
+  video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  canvas#paint{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  
+  /* Enhanced HUD */
+  .hud{position:absolute;inset:0;pointer-events:none;z-index:10;}
+  
+  .safe{
+    position:absolute;inset:8%;
+    border:1px solid rgba(255,255,255,.3);border-radius:8px;
+    box-shadow:inset 0 0 20px rgba(0,229,255,0.1);
+    animation:var(--pulse);
+  }
+  
+  .thirds{position:absolute;inset:0;}
+  .thirds::before,.thirds::after,.thirds span::before,.thirds span::after{
+    content:"";position:absolute;background:rgba(255,255,255,.15);
+    box-shadow:0 0 2px rgba(0,229,255,0.5);
+  }
+  .thirds::before{left:33.33%;top:0;bottom:0;width:1px;}
+  .thirds::after{left:66.66%;top:0;bottom:0;width:1px;}
+  .thirds span::before{top:33.33%;left:0;right:0;height:1px;}
+  .thirds span::after{top:66.66%;left:0;right:0;height:1px;}
+  
+  .center{position:absolute;inset:0;display:grid;place-items:center;}
+  .center i{
+    width:16px;height:16px;border:2px solid var(--accent);border-radius:50%;
+    box-shadow:0 0 15px var(--accent), inset 0 0 5px rgba(0,0,0,.8);
+    animation:var(--pulse);
+  }
+  
+  /* Corner markers */
+  .corners{position:absolute;inset:0;}
+  .corners::before,.corners::after{
+    content:"";position:absolute;width:30px;height:30px;
+    border:2px solid var(--accent);opacity:0.6;
+  }
+  .corners::before{
+    top:20px;left:20px;border-right:none;border-bottom:none;
+    border-radius:8px 0 0 0;
+  }
+  .corners::after{
+    bottom:20px;right:20px;border-left:none;border-top:none;
+    border-radius:0 0 8px 0;
+  }
+  
+  .rec{
+    position:absolute;top:15px;left:20px;display:flex;align-items:center;gap:12px;
+    font-weight:700;font-size:1.1rem;
+  }
+  .dot{
+    width:12px;height:12px;border-radius:50%;background:transparent;
+    border:2px solid rgba(255,255,255,.4);transition:all 0.3s ease;
+  }
+  .rec.live .dot{
+    background:var(--hot);border-color:var(--hot);
+    box-shadow:0 0 20px var(--hot), 0 0 40px var(--hot);
+    animation:var(--pulse);
+  }
+  
+  .topline{position:absolute;top:15px;right:20px;display:flex;gap:15px;}
+  .badge{
+    pointer-events:auto;border:1px solid var(--rim);
+    background:rgba(10,13,20,.85);backdrop-filter:blur(15px);
+    padding:8px 14px;border-radius:12px;font-family:'JetBrains Mono',monospace;
+    box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:all 0.3s ease;
+  }
+  .badge:hover{transform:translateY(-2px);box-shadow:0 6px 25px rgba(0,229,255,0.2);}
+  .badge strong{color:var(--gold);font-weight:700;}
+  
+  .footbar{
+    position:absolute;left:20px;right:20px;bottom:20px;
+    display:flex;gap:20px;align-items:center;justify-content:space-between;
+    background:rgba(10,13,20,.9);backdrop-filter:blur(20px);
+    padding:15px 20px;border-radius:15px;border:1px solid var(--rim);
+    box-shadow:0 8px 30px rgba(0,0,0,0.4);
+  }
+  
+  .group{display:flex;gap:15px;align-items:center;}
+  label{font-size:0.85rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+  
+  select,input[type=range]{pointer-events:auto;}
   select,button,.pill{
-    border:1px solid var(--rim);border-radius:10px;padding:6px 10px;background:linear-gradient(180deg,#141a2b,#0f1525);color:var(--fg)
+    border:1px solid var(--rim);border-radius:12px;padding:8px 14px;
+    background:linear-gradient(145deg,#1a2332,#0e1421);color:var(--fg);
+    transition:all 0.3s ease;font-family:inherit;
   }
-  .pill{pointer-events:auto}
-  .meters{display:flex;gap:8px;align-items:center}
-  .meter{width:120px;height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset}
-  .meter > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#22d3ee,#a78bfa)}
-  #hist{width:160px;height:50px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid var(--rim)}
-  .controls{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-  button{cursor:pointer}
-  button.primary{border-color:var(--accent);color:var(--accent)}
-  footer{padding:10px;text-align:center;color:var(--muted);font-size:.85rem}
+  select:hover,button:hover,.pill:hover{
+    border-color:var(--accent);box-shadow:0 0 10px rgba(0,229,255,0.3);
+  }
+  
+  .pill{pointer-events:auto;}
+  
+  /* Enhanced meters */
+  .meters{display:flex;gap:12px;align-items:center;}
+  .meter{
+    width:140px;height:12px;border-radius:20px;
+    background:rgba(255,255,255,.08);overflow:hidden;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.6);border:1px solid var(--rim);
+    position:relative;
+  }
+  .meter::before{
+    content:"";position:absolute;top:0;left:0;right:0;bottom:0;
+    background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.1) 50%,transparent 100%);
+    animation:scan 2s linear infinite;
+  }
+  .meter > i{
+    display:block;height:100%;width:0;
+    background:linear-gradient(90deg,var(--cyan),var(--accent),var(--purple));
+    box-shadow:0 0 10px currentColor;transition:width 0.3s ease;
+  }
+  
+  /* Enhanced histogram */
+  #hist{
+    width:180px;height:60px;border-radius:10px;
+    background:rgba(0,0,0,.5);border:2px solid var(--rim);
+    box-shadow:inset 0 0 15px rgba(0,0,0,0.8);
+    position:relative;overflow:hidden;
+  }
+  #hist::before{
+    content:"HISTOGRAM";position:absolute;top:2px;left:4px;
+    font-size:8px;color:var(--muted);letter-spacing:1px;
+  }
+  
+  /* Waveform display */
+  .waveform{
+    width:120px;height:40px;border-radius:8px;
+    background:rgba(0,0,0,.5);border:1px solid var(--rim);
+    box-shadow:inset 0 0 10px rgba(0,0,0,0.8);
+    position:relative;
+  }
+  #waveCanvas{width:100%;height:100%;border-radius:inherit;}
+  
+  .controls{
+    margin-top:25px;display:flex;gap:15px;flex-wrap:wrap;justify-content:center;
+    padding:20px;border-radius:15px;
+    background:rgba(30,42,69,0.3);backdrop-filter:blur(10px);
+    border:1px solid var(--rim);
+  }
+  
+  button{
+    cursor:pointer;font-size:1rem;font-weight:600;
+    transition:all 0.3s ease;position:relative;overflow:hidden;
+    text-transform:uppercase;letter-spacing:0.5px;
+  }
+  button::before{
+    content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+    transition:left 0.5s ease;
+  }
+  button:hover::before{left:100%;}
+  button:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,229,255,0.3);}
+  
+  button.primary{
+    border-color:var(--accent);color:var(--accent);
+    background:linear-gradient(145deg,rgba(0,229,255,0.1),rgba(0,229,255,0.05));
+  }
+  button.primary:hover{
+    background:linear-gradient(145deg,rgba(0,229,255,0.2),rgba(0,229,255,0.1));
+    box-shadow:var(--glow);
+  }
+  
+  button.danger{
+    border-color:var(--hot);color:var(--hot);
+    background:linear-gradient(145deg,rgba(255,77,109,0.1),rgba(255,77,109,0.05));
+  }
+  
+  button:disabled{
+    opacity:0.5;cursor:not-allowed;transform:none;
+  }
+  button:disabled:hover{transform:none;box-shadow:none;}
+  
+  /* Advanced input styling */
+  input[type=range]{
+    -webkit-appearance:none;background:transparent;height:6px;
+    border-radius:3px;background:rgba(255,255,255,0.1);
+    border:1px solid var(--rim);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--accent);border:2px solid var(--fg);
+    box-shadow:0 0 10px var(--accent);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;
+    background:var(--accent);border:2px solid var(--fg);
+    box-shadow:0 0 10px var(--accent);cursor:pointer;
+  }
+  
+  footer{
+    padding:20px;text-align:center;color:var(--muted);font-size:.9rem;
+    background:linear-gradient(180deg,transparent,rgba(30,42,69,0.3));
+    border-top:1px solid var(--rim);
+  }
+  
+  /* Status indicators */
+  .status-panel{
+    position:absolute;bottom:80px;left:20px;
+    background:rgba(10,13,20,.9);backdrop-filter:blur(15px);
+    padding:12px 16px;border-radius:12px;border:1px solid var(--rim);
+    display:flex;gap:15px;align-items:center;
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  }
+  .status-item{display:flex;align-items:center;gap:6px;font-size:0.8rem;}
+  .status-led{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--muted);transition:all 0.3s ease;
+  }
+  .status-led.active{background:var(--green);box-shadow:0 0 8px var(--green);}
+  .status-led.recording{background:var(--hot);box-shadow:0 0 8px var(--hot);animation:var(--pulse);}
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .footbar{flex-direction:column;gap:15px;}
+    .group{flex-wrap:wrap;justify-content:center;}
+    .controls{gap:10px;}
+    button{padding:10px 16px;font-size:0.9rem;}
+    .topline{flex-direction:column;gap:8px;right:10px;}
+    .badge{padding:6px 10px;font-size:0.8rem;}
+  }
 </style>
 </head>
 <body>
   <header>
     <h1>P.O.P.S. DIGITAL CINEMA — XL 8K VV</h1>
-    <span class="tag">Global Shutter (software pipeline)</span>
-    <span class="tag">Offline‑first • Local slices</span>
-    <span class="tag">Virtual Production Ready*</span>
+    <span class="tag">Global Shutter Pro</span>
+    <span class="tag">Real-time Processing</span>
+    <span class="tag">Cinema-grade Pipeline</span>
+    <span class="tag">Advanced Analytics</span>
   </header>
 
   <main>
@@ -67,9 +293,10 @@
       <video id="vf" playsinline autoplay muted></video>
       <canvas id="paint"></canvas>
 
-      <div class="hud" aria-hidden="true">
+      <div class="hud">
         <div class="safe"></div>
         <div class="thirds"><span></span></div>
+        <div class="corners"></div>
         <div class="center"><i></i></div>
 
         <div class="rec" id="recLamp">
@@ -81,99 +308,131 @@
           <div class="badge">RES <strong id="resBadge">—</strong></div>
           <div class="badge">ISO <strong id="isoBadge">AUTO</strong></div>
           <div class="badge">WB <strong id="wbBadge">AUTO</strong></div>
+          <div class="badge">CODEC <strong id="codecBadge">VP9</strong></div>
         </div>
 
         <div class="footbar">
           <div class="group">
-            <label for="mode">Mode</label>
-            <select id="mode" class="pill" title="Resolution preset (requests closest supported)">
-              <option value="8k">8K 120</option>
-              <option value="6k">6K 160</option>
-              <option value="2k">2K 600</option>
-              <option value="max" selected>Device Max</option>
+            <label for="mode">Resolution</label>
+            <select id="mode" class="pill">
+              <option value="8k">8K Cinema (7680×4320@120)</option>
+              <option value="6k">6K Super35 (6144×3160@160)</option>
+              <option value="4k">4K UHD (3840×2160@120)</option>
+              <option value="2k">2K DCI (2048×1080@240)</option>
+              <option value="max" selected>Device Maximum</option>
             </select>
 
-            <label for="nd">ND (stops)</label>
-            <input id="nd" type="range" min="0" max="7" step="0.1" value="0"/>
+            <label for="nd">ND Filter</label>
+            <input id="nd" type="range" min="0" max="10" step="0.1" value="0" title="0-10 stops"/>
 
             <label for="exp">Exposure</label>
-            <input id="exp" type="range" min="-2" max="2" step="0.1" value="0"/>
+            <input id="exp" type="range" min="-3" max="3" step="0.1" value="0" title="-3 to +3 EV"/>
 
-            <label>Histogram</label>
+            <label for="contrast">Contrast</label>
+            <input id="contrast" type="range" min="0.5" max="2" step="0.1" value="1"/>
+
+            <label for="saturation">Saturation</label>
+            <input id="saturation" type="range" min="0" max="2" step="0.1" value="1"/>
+
+            <div class="waveform">
+              <canvas id="waveCanvas"></canvas>
+            </div>
+
             <canvas id="hist"></canvas>
           </div>
 
-          <div class="group">
-            <label><input type="checkbox" id="fcOn"> False‑Color</label>
-            <label for="fcOp">Opacity</label>
-            <input id="fcOp" type="range" min="0" max="1" step="0.05" value="0.6"/>
-            <label><input type="checkbox" id="pkOn"> Focus Peaking</label>
-            <label for="pkTh">Thresh</label>
-            <input id="pkTh" type="range" min="10" max="200" step="5" value="80"/>
-            <label for="pkCol">Color</label>
-            <input id="pkCol" type="color" value="#00ff85" />
-          </div>
-
           <div class="meters">
-            <div class="meter"><i id="expMeter"></i></div>
-            <div class="meter"><i id="ndMeter"></i></div>
+            <div class="meter" title="Exposure Level"><i id="expMeter"></i></div>
+            <div class="meter" title="ND Filter Level"><i id="ndMeter"></i></div>
+            <div class="meter" title="Processing Load"><i id="loadMeter"></i></div>
+          </div>
+        </div>
+
+        <div class="status-panel">
+          <div class="status-item">
+            <div class="status-led" id="cameraLed"></div>
+            <span>CAMERA</span>
+          </div>
+          <div class="status-item">
+            <div class="status-led" id="streamLed"></div>
+            <span>STREAM</span>
+          </div>
+          <div class="status-item">
+            <div class="status-led" id="recordLed"></div>
+            <span>RECORD</span>
+          </div>
+          <div class="status-item">
+            <div class="status-led" id="storageLed"></div>
+            <span>STORAGE</span>
           </div>
         </div>
       </div>
     </div>
 
     <div class="controls">
-      <button id="start" class="primary">🎥 Start Camera</button>
-      <button id="snap">📸 Still</button>
-      <button id="record">⏺️ Record</button>
+      <button id="start" class="primary">🎥 Initialize Camera</button>
+      <button id="snap">📸 Capture Still</button>
+      <button id="record">⏺️ Start Recording</button>
       <button id="download" disabled>💾 Download Last</button>
-      <button id="reset">♻️ Reset</button>
+      <button id="preset">🎨 Load Preset</button>
+      <button id="reset" class="danger">♻️ System Reset</button>
     </div>
   </main>
 
   <footer>
-    Sidekick in light, guardian in time — frame by frame, story by story. • *Genlock/Phantom Track simulated for browser.*
+    Professional cinema-grade processing pipeline • Real-time analytics • Frame-perfect capture • Advanced color science
   </footer>
 
 <script>
 (async function(){
   const vf = document.getElementById('vf');
   const paint = document.getElementById('paint');
-  const pctx = paint.getContext('2d', { alpha: false }); // video + processing
+  const pctx = paint.getContext('2d', { willReadFrequently: true });
   const hist = document.getElementById('hist');
   const hctx = hist.getContext('2d');
+  const wave = document.getElementById('waveCanvas');
+  const wctx = wave.getContext('2d');
 
   const btnStart = document.getElementById('start');
   const btnSnap = document.getElementById('snap');
   const btnRec  = document.getElementById('record');
   const btnDl   = document.getElementById('download');
+  const btnPreset = document.getElementById('preset');
   const btnReset= document.getElementById('reset');
 
   const modeSel = document.getElementById('mode');
   const ndSlider = document.getElementById('nd');
   const expSlider= document.getElementById('exp');
+  const contrastSlider = document.getElementById('contrast');
+  const saturationSlider = document.getElementById('saturation');
+  
   const fpsBadge = document.getElementById('fps');
   const resBadge = document.getElementById('resBadge');
+  const codecBadge = document.getElementById('codecBadge');
   const expMeter = document.getElementById('expMeter');
   const ndMeter  = document.getElementById('ndMeter');
+  const loadMeter = document.getElementById('loadMeter');
   const recLamp  = document.getElementById('recLamp');
   const recTimer = document.getElementById('recTimer');
 
-  const fcOn = document.getElementById('fcOn');
-  const fcOp = document.getElementById('fcOp');
-  const pkOn = document.getElementById('pkOn');
-  const pkTh = document.getElementById('pkTh');
-  const pkCol= document.getElementById('pkCol');
+  // Status LEDs
+  const cameraLed = document.getElementById('cameraLed');
+  const streamLed = document.getElementById('streamLed');
+  const recordLed = document.getElementById('recordLed');
+  const storageLed = document.getElementById('storageLed');
 
   let stream=null, mediaRec=null, chunks=[], lastBlob=null;
-  let rafId=null, lastT=performance.now(), frameCount=0, fps=0;
+  let rafId=null, lastT=performance.now(), frameCount=0, fps=0, processingLoad=0;
   let startTime=null, recInterval=null;
+  let imageData=null, histogram=new Uint32Array(256), waveformData=new Uint32Array(100);
 
+  // Enhanced resolution presets
   function presetToConstraints(preset){
     const table = {
       '8k': {width:{ideal:7680}, height:{ideal:4320}, frameRate:{ideal:120}},
       '6k': {width:{ideal:6144}, height:{ideal:3160}, frameRate:{ideal:160}},
-      '2k': {width:{ideal:2048}, height:{ideal:1080}, frameRate:{ideal:600}},
+      '4k': {width:{ideal:3840}, height:{ideal:2160}, frameRate:{ideal:120}},
+      '2k': {width:{ideal:2048}, height:{ideal:1080}, frameRate:{ideal:240}},
       'max':{width:{ideal:9999}, height:{ideal:9999}, frameRate:{ideal:120}}
     };
     return table[preset] || table.max;
@@ -181,218 +440,431 @@
 
   async function startCamera(){
     stopCamera();
-    const constraints = { video: presetToConstraints(modeSel.value), audio: false };
+    const constraints = { 
+      video: {
+        ...presetToConstraints(modeSel.value),
+        facingMode: 'environment' // prefer back camera on mobile
+      }, 
+      audio: false 
+    };
+    
     try{
+      cameraLed.className = 'status-led';
       stream = await navigator.mediaDevices.getUserMedia(constraints);
       vf.srcObject = stream;
       await vf.play();
-      paint.width = vf.videoWidth;
-      paint.height= vf.videoHeight;
+      
+      // Setup canvas with device pixel ratio for crisp rendering
+      const dpr = window.devicePixelRatio || 1;
+      paint.width = vf.videoWidth * dpr;
+      paint.height = vf.videoHeight * dpr;
+      paint.style.width = vf.videoWidth + 'px';
+      paint.style.height = vf.videoHeight + 'px';
+      pctx.scale(dpr, dpr);
+      
       resBadge.textContent = `${vf.videoWidth}×${vf.videoHeight}`;
+      cameraLed.className = 'status-led active';
+      streamLed.className = 'status-led active';
+      storageLed.className = 'status-led active';
+      
+      // Setup histogram canvas
+      hist.width = 180 * dpr;
+      hist.height = 60 * dpr;
+      hctx.scale(dpr, dpr);
+      
+      // Setup waveform canvas
+      wave.width = 120 * dpr;
+      wave.height = 40 * dpr;
+      wctx.scale(dpr, dpr);
+      
       loop();
     }catch(e){
+      cameraLed.className = 'status-led';
       alert('Camera unavailable or permission denied.\n' + e.message);
     }
   }
 
   function stopCamera(){
     if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
-    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    if(stream){
+      stream.getTracks().forEach(t=>t.stop());
+      stream=null;
+    }
+    cameraLed.className = 'status-led';
+    streamLed.className = 'status-led';
   }
 
   function loop(now=performance.now()){
     rafId = requestAnimationFrame(loop);
+    const startProcess = performance.now();
 
-    // FPS calc
+    // FPS calculation with smoothing
     frameCount++;
     if(now - lastT >= 500){
       fps = Math.round((frameCount*1000)/(now-lastT));
       frameCount = 0; lastT = now;
-      fpsBadge.textContent = `FPS ${fps}`;
+      fpsBadge.textContent = `${fps} FPS`;
     }
 
-    // Draw live frame
-    pctx.drawImage(vf, 0, 0, paint.width, paint.height);
+    // Draw and process frame
+    const w = vf.videoWidth, h = vf.videoHeight;
+    pctx.drawImage(vf, 0, 0, w, h);
 
-    // Read pixels
-    const w = paint.width, h = paint.height;
-    const img = pctx.getImageData(0,0,w,h);
-    const data = img.data;
+    // Get image data for processing
+    imageData = pctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
 
-    // Pipeline controls
-    const ndStops  = parseFloat(ndSlider.value);    // 0..7
-    const ev       = parseFloat(expSlider.value);   // -2..+2
+    // Advanced color processing
+    const ndStops = parseFloat(ndSlider.value);
+    const ev = parseFloat(expSlider.value);
+    const contrast = parseFloat(contrastSlider.value);
+    const saturation = parseFloat(saturationSlider.value);
+    
     const ndFactor = Math.pow(0.5, ndStops);
-    const expFactor= Math.pow(2, ev);
+    const expFactor = Math.pow(2, ev);
 
-    // Histogram bins
-    const bins = 64; const histo = new Uint32Array(bins);
+    // Reset histogram
+    histogram.fill(0);
+    waveformData.fill(0);
 
-    // First pass: ND + EV + histogram (linear-ish)
-    for(let i=0;i<data.length;i+=4){
-      data[i]   = Math.min(255, data[i]  * ndFactor * expFactor);
-      data[i+1] = Math.min(255, data[i+1]* ndFactor * expFactor);
-      data[i+2] = Math.min(255, data[i+2]* ndFactor * expFactor);
-      const Y = (0.2627*data[i] + 0.6780*data[i+1] + 0.0593*data[i+2])|0;
-      histo[(Y>>2)]++;
-    }
-
-    // Optional: False Color overlay (exposure visualization)
-    if(fcOn.checked){
-      const alpha = parseFloat(fcOp.value); // 0..1
-      for(let i=0;i<data.length;i+=4){
-        const Y = (0.2627*data[i] + 0.6780*data[i+1] + 0.0593*data[i+2]); // 0..255
-        // Map luminance to false‑color scale (blue -> green -> yellow -> red -> white)
-        let r=0,g=0,b=0;
-        if(Y < 32){ r=0; g=0; b=255; }                   // deep shadows (blue)
-        else if(Y < 64){ r=0; g=128; b=255; }            // shadows (cyan)
-        else if(Y < 96){ r=0; g=200; b=100; }            // mid‑low (green)
-        else if(Y < 160){ r=220; g=220; b=0; }           // mids (yellow)
-        else if(Y < 220){ r=255; g=80; b=0; }            // highlights (red)
-        else { r=255; g=255; b=255; }                    // clipping (white)
-        // Alpha blend onto current pixel
-        data[i]   = (1-alpha)*data[i]   + alpha*r;
-        data[i+1] = (1-alpha)*data[i+1] + alpha*g;
-        data[i+2] = (1-alpha)*data[i+2] + alpha*b;
+    // Process pixels with advanced color science
+    for(let i=0; i<data.length; i+=4){
+      let r = data[i], g = data[i+1], b = data[i+2];
+      
+      // Apply ND and exposure
+      r = r * ndFactor * expFactor;
+      g = g * ndFactor * expFactor;
+      b = b * ndFactor * expFactor;
+      
+      // Apply contrast (around midpoint)
+      r = ((r - 128) * contrast) + 128;
+      g = ((g - 128) * contrast) + 128;
+      b = ((b - 128) * contrast) + 128;
+      
+      // Apply saturation
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      r = gray + saturation * (r - gray);
+      g = gray + saturation * (g - gray);
+      b = gray + saturation * (b - gray);
+      
+      // Clamp values
+      data[i] = Math.max(0, Math.min(255, r));
+      data[i+1] = Math.max(0, Math.min(255, g));
+      data[i+2] = Math.max(0, Math.min(255, b));
+      
+      // Update histogram (luminance)
+      const luma = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
+      histogram[luma]++;
+      
+      // Update waveform (simplified - take samples)
+      if((i/4) % (w * h / 100) === 0){
+        const waveIndex = Math.floor((i/4) / (w * h / 100));
+        if(waveIndex < 100) waveformData[waveIndex] = luma;
       }
     }
+    
+    pctx.putImageData(imageData, 0, 0);
 
-    // Optional: Focus Peaking (Sobel edge magnitude over threshold)
-    if(pkOn.checked){
-      const thr = parseInt(pkTh.value,10); // 10..200
-      // Quick grayscale copy for Sobel
-      const gray = new Uint8ClampedArray(w*h);
-      for(let i=0,j=0;i<data.length;i+=4,++j){
-        gray[j] = (0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2])|0;
-      }
-      // Sobel kernels
-      const sobelX = [-1,0,1,-2,0,2,-1,0,1];
-      const sobelY = [-1,-2,-1,0,0,0,1,2,1];
-      const pkRGB = hexToRgb(pkCol.value);
-
-      // Edge pass (skip border)
-      for(let y=1;y<h-1;y+=1){
-        for(let x=1;x<w-1;x+=1){
-          const p = y*w + x;
-          // 3x3 neighborhood
-          let gx=0, gy=0, k=0;
-          for(let j=-1;j<=1;j++){
-            for(let i2=-1;i2<=1;i2++){
-              const v = gray[p + j*w + i2];
-              gx += v * sobelX[k];
-              gy += v * sobelY[k];
-              k++;
-            }
-          }
-          const mag = Math.sqrt(gx*gx + gy*gy);
-          if(mag > thr){
-            const idx = (p<<2);
-            // Screen‑like blend for peaking highlight
-            data[idx]   = 255 - (((255 - data[idx])   * (255 - pkRGB.r)) >> 8);
-            data[idx+1] = 255 - (((255 - data[idx+1]) * (255 - pkRGB.g)) >> 8);
-            data[idx+2] = 255 - (((255 - data[idx+2]) * (255 - pkRGB.b)) >> 8);
-          }
-        }
-      }
-    }
-
-    // Commit pixels back
-    pctx.putImageData(img,0,0);
-
-    // meters
-    ndMeter.style.width = `${Math.min(100, (ndStops/7)*100)}%`;
-    const expPct = Math.max(0, Math.min(1, (ev+2)/4));
+    // Update meters
+    ndMeter.style.width = `${Math.min(100, (ndStops/10)*100)}%`;
+    
+    const expPct = Math.max(0, Math.min(1, (ev+3)/6));
     expMeter.style.width = `${expPct*100}%`;
+    
+    // Processing load meter
+    const processTime = performance.now() - startProcess;
+    processingLoad = Math.min(100, (processTime / 16.67) * 100); // 16.67ms = 60fps budget
+    loadMeter.style.width = `${processingLoad}%`;
 
-    // histogram draw
-    drawHistogram(histo);
+    // Render visualizations
+    drawHistogram();
+    drawWaveform();
   }
 
-  function drawHistogram(histo){
-    const w=hist.width, h=hist.height;
-    hctx.clearRect(0,0,w,h);
-    hctx.fillStyle='rgba(0,0,0,.35)'; hctx.fillRect(0,0,w,h);
-    const max = Math.max(...histo)||1;
-    const bw = w/histo.length;
-    for(let i=0;i<histo.length;i++){
-      const v = histo[i]/max, barH = v*h;
-      hctx.fillStyle='rgba(255,255,255,.85)';
-      hctx.fillRect(i*bw, h-barH, Math.max(1,bw-1), barH);
+  function drawHistogram(){
+    const w = 180, h = 60;
+    hctx.clearRect(0, 0, w, h);
+    
+    // Background gradient
+    const bgGrad = hctx.createLinearGradient(0, 0, 0, h);
+    bgGrad.addColorStop(0, 'rgba(0,0,0,0.8)');
+    bgGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+    hctx.fillStyle = bgGrad;
+    hctx.fillRect(0, 0, w, h);
+    
+    // Draw histogram bars with gradient
+    const max = Math.max(...histogram) || 1;
+    const barWidth = w / histogram.length;
+    
+    for(let i = 0; i < histogram.length; i++){
+      const value = histogram[i] / max;
+      const barHeight = value * (h - 10);
+      
+      if(barHeight > 0){
+        const gradient = hctx.createLinearGradient(0, h, 0, h - barHeight);
+        gradient.addColorStop(0, '#00e5ff');
+        gradient.addColorStop(0.5, '#22d3ee');
+        gradient.addColorStop(1, '#a855f7');
+        
+        hctx.fillStyle = gradient;
+        hctx.fillRect(i * barWidth, h - barHeight, Math.max(1, barWidth - 0.5), barHeight);
+      }
     }
-    hctx.strokeStyle='rgba(255,255,255,.25)';
-    hctx.beginPath(); hctx.moveTo(w/2,0); hctx.lineTo(w/2,h); hctx.stroke();
+    
+    // Draw zone markers (shadows, midtones, highlights)
+    hctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    hctx.setLineDash([2, 2]);
+    hctx.beginPath();
+    hctx.moveTo(w * 0.33, 0); hctx.lineTo(w * 0.33, h);
+    hctx.moveTo(w * 0.66, 0); hctx.lineTo(w * 0.66, h);
+    hctx.stroke();
+    hctx.setLineDash([]);
   }
 
-  // Recording (canvas capture — HUD baked in)
-  function startRecording(){
-    const fps = 30;
-    const stream = paint.captureStream(fps);
-    mediaRec = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
-    chunks = [];
-    mediaRec.ondataavailable = e=> e.data.size && chunks.push(e.data);
-    mediaRec.onstop = ()=>{
-      lastBlob = new Blob(chunks, {type:'video/webm'});
-      btnDl.disabled = false;
-    };
-    mediaRec.start();
-    recLamp.classList.add('live');
-    startTime = Date.now();
-    recInterval = setInterval(updateTimer, 500);
+  function drawWaveform(){
+    const w = 120, h = 40;
+    wctx.clearRect(0, 0, w, h);
+    
+    // Background
+    wctx.fillStyle = 'rgba(0,0,0,0.6)';
+    wctx.fillRect(0, 0, w, h);
+    
+    // Draw waveform
+    wctx.strokeStyle = '#00e5ff';
+    wctx.lineWidth = 1;
+    wctx.beginPath();
+    
+    for(let i = 0; i < waveformData.length; i++){
+      const x = (i / waveformData.length) * w;
+      const y = h - (waveformData[i] / 255) * h;
+      
+      if(i === 0) wctx.moveTo(x, y);
+      else wctx.lineTo(x, y);
+    }
+    
+    wctx.stroke();
+    
+    // Draw reference lines
+    wctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    wctx.setLineDash([1, 1]);
+    wctx.beginPath();
+    wctx.moveTo(0, h * 0.25); wctx.lineTo(w, h * 0.25);
+    wctx.moveTo(0, h * 0.5); wctx.lineTo(w, h * 0.5);
+    wctx.moveTo(0, h * 0.75); wctx.lineTo(w, h * 0.75);
+    wctx.stroke();
+    wctx.setLineDash([]);
   }
+
+  // Enhanced recording with multiple codec support
+  function startRecording(){
+    const codecs = [
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8', 
+      'video/mp4;codecs=h264',
+      'video/webm'
+    ];
+    
+    let mimeType = codecs.find(codec => MediaRecorder.isTypeSupported(codec)) || 'video/webm';
+    codecBadge.textContent = mimeType.split(';')[0].split('/')[1].toUpperCase();
+    
+    const captureStream = paint.captureStream(Math.min(fps, 60));
+    mediaRec = new MediaRecorder(captureStream, { 
+      mimeType, 
+      videoBitsPerSecond: 25000000 // 25Mbps for high quality
+    });
+    
+    chunks = [];
+    mediaRec.ondataavailable = e => e.data.size && chunks.push(e.data);
+    mediaRec.onstop = () => {
+      lastBlob = new Blob(chunks, { type: mimeType });
+      btnDl.disabled = false;
+      recordLed.className = 'status-led';
+    };
+    
+    mediaRec.start(1000); // 1 second intervals for better streaming
+    recLamp.classList.add('live');
+    recordLed.className = 'status-led recording';
+    startTime = Date.now();
+    recInterval = setInterval(updateTimer, 100);
+  }
+
   function stopRecording(){
-    if(mediaRec && mediaRec.state!=='inactive'){ mediaRec.stop(); }
-    mediaRec=null;
+    if(mediaRec && mediaRec.state !== 'inactive'){ 
+      mediaRec.stop(); 
+    }
+    mediaRec = null;
     recLamp.classList.remove('live');
+    recordLed.className = 'status-led';
     clearInterval(recInterval);
     updateTimer(true);
   }
-  function updateTimer(final=false){
-    const t = final ? 0 : (Date.now()-startTime);
-    const s = Math.floor(t/1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
-    recTimer.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+
+  function updateTimer(final = false){
+    const t = final ? 0 : (Date.now() - startTime);
+    const hours = Math.floor(t / 3600000);
+    const minutes = Math.floor((t % 3600000) / 60000);
+    const seconds = Math.floor((t % 60000) / 1000);
+    
+    recTimer.textContent = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
   }
 
-  // Stills (processed frame)
+  // Enhanced still capture with metadata
   function captureStill(){
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    
+    canvas.width = vf.videoWidth * dpr;
+    canvas.height = vf.videoHeight * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.drawImage(paint, 0, 0, vf.videoWidth, vf.videoHeight);
+    
+    // Add metadata overlay (optional)
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillRect(10, 10, 300, 80);
+    ctx.fillStyle = '#00e5ff';
+    ctx.font = '12px JetBrains Mono';
+    ctx.fillText(`P.O.P.S. XL 8K VV - ${new Date().toISOString()}`, 20, 30);
+    ctx.fillText(`Resolution: ${vf.videoWidth}×${vf.videoHeight}`, 20, 50);
+    ctx.fillText(`Settings: ND${ndSlider.value} EV${expSlider.value} C${contrastSlider.value}`, 20, 70);
+    
     const a = document.createElement('a');
     a.download = `POPS_XL8KVV_${Date.now()}.png`;
-    a.href = paint.toDataURL('image/png');
+    a.href = canvas.toDataURL('image/png');
     a.click();
   }
+
   function downloadLast(){
     if(!lastBlob) return;
     const a = document.createElement('a');
-    a.download = `POPS_XL8KVV_${Date.now()}.webm`;
+    const ext = lastBlob.type.includes('webm') ? 'webm' : 'mp4';
+    a.download = `POPS_XL8KVV_${Date.now()}.${ext}`;
     a.href = URL.createObjectURL(lastBlob);
     a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }
 
-  // UI bindings
-  document.getElementById('start').addEventListener('click', startCamera);
-  document.getElementById('snap').addEventListener('click', captureStill);
-  document.getElementById('download').addEventListener('click', downloadLast);
-  document.getElementById('reset').addEventListener('click', ()=>{ stopRecording(); stopCamera(); vf.srcObject=null; });
-  modeSel.addEventListener('change', startCamera);
+  // Preset management
+  const presets = {
+    cinematic: { nd: 3, exp: -0.5, contrast: 1.2, saturation: 0.9 },
+    natural: { nd: 1, exp: 0, contrast: 1, saturation: 1 },
+    dramatic: { nd: 2, exp: 0.5, contrast: 1.5, saturation: 1.2 },
+    lowlight: { nd: 0, exp: 1.5, contrast: 0.8, saturation: 0.8 }
+  };
 
-  document.getElementById('record').addEventListener('click', ()=>{
-    if(!mediaRec || mediaRec.state==='inactive'){ startRecording(); document.getElementById('record').textContent='⏹ Stop'; }
-    else{ stopRecording(); document.getElementById('record').textContent='⏺️ Record'; }
+  function loadPreset(){
+    const presetNames = Object.keys(presets);
+    const selected = presetNames[Math.floor(Math.random() * presetNames.length)];
+    const preset = presets[selected];
+    
+    ndSlider.value = preset.nd;
+    expSlider.value = preset.exp;
+    contrastSlider.value = preset.contrast;
+    saturationSlider.value = preset.saturation;
+    
+    // Show notification
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed; top: 20px; right: 20px; z-index: 1000;
+      background: rgba(0,229,255,0.9); color: #000; padding: 12px 20px;
+      border-radius: 8px; font-weight: bold; animation: slideIn 0.3s ease;
+    `;
+    notification.textContent = `Loaded ${selected.toUpperCase()} preset`;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 2000);
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    
+    switch(e.key.toLowerCase()){
+      case ' ': e.preventDefault(); btnRec.click(); break;
+      case 's': e.preventDefault(); btnSnap.click(); break;
+      case 'c': e.preventDefault(); btnStart.click(); break;
+      case 'p': e.preventDefault(); btnPreset.click(); break;
+      case 'r': e.preventDefault(); btnReset.click(); break;
+      case 'd': if(e.ctrlKey) { e.preventDefault(); btnDl.click(); } break;
+    }
   });
 
-  // Resize handling
+  // UI event listeners
+  btnStart.addEventListener('click', startCamera);
+  btnSnap.addEventListener('click', captureStill);
+  btnDl.addEventListener('click', downloadLast);
+  btnPreset.addEventListener('click', loadPreset);
+  btnReset.addEventListener('click', () => {
+    stopRecording();
+    stopCamera();
+    vf.srcObject = null;
+    lastBlob = null;
+    btnDl.disabled = true;
+    
+    // Reset all controls
+    ndSlider.value = 0;
+    expSlider.value = 0;
+    contrastSlider.value = 1;
+    saturationSlider.value = 1;
+    modeSel.value = 'max';
+    
+    // Reset status LEDs
+    document.querySelectorAll('.status-led').forEach(led => led.className = 'status-led');
+  });
+
+  btnRec.addEventListener('click', () => {
+    if(!mediaRec || mediaRec.state === 'inactive'){
+      startRecording();
+      btnRec.textContent = '⏹ Stop Recording';
+      btnRec.classList.add('danger');
+    } else {
+      stopRecording();
+      btnRec.textContent = '⏺️ Start Recording';
+      btnRec.classList.remove('danger');
+    }
+  });
+
+  modeSel.addEventListener('change', () => {
+    if(stream) startCamera(); // Restart with new resolution
+  });
+
+  // Resize handling with device pixel ratio support
   const stage = document.getElementById('stage');
-  const ro = new ResizeObserver(()=>{
-    hist.width = Math.floor(160 * devicePixelRatio);
-    hist.height= Math.floor(50  * devicePixelRatio);
+  const ro = new ResizeObserver(() => {
+    const dpr = window.devicePixelRatio || 1;
+    hist.width = 180 * dpr;
+    hist.height = 60 * dpr;
+    wave.width = 120 * dpr;
+    wave.height = 40 * dpr;
+    hctx.scale(dpr, dpr);
+    wctx.scale(dpr, dpr);
   });
   ro.observe(stage);
 
-  // Helpers
-  function hexToRgb(hex){
-    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return m ? { r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)} : {r:0,g:255,b:128};
-  }
+  // Performance monitoring
+  setInterval(() => {
+    if(stream && fps > 0){
+      // Check for performance issues
+      if(processingLoad > 90){
+        console.warn('High processing load detected:', processingLoad.toFixed(1) + '%');
+      }
+      
+      // Update storage status (simulate)
+      storageLed.className = lastBlob ? 'status-led active' : 'status-led';
+    }
+  }, 1000);
+
+  // Add CSS animation keyframes dynamically
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  console.log('P.O.P.S. Digital Cinema XL 8K VV - Advanced Edition Initialized');
+  console.log('Keyboard shortcuts: Space=Record, S=Still, C=Camera, P=Preset, R=Reset, Ctrl+D=Download');
 })();
 </script>
 </body>
