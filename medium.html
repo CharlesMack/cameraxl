@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>P.O.P.S. DIGITAL CINEMA — XL 8K VV (HUD • Peaking • False Color)</title>
+<style>
+  :root{
+    --bg:#0a0d14;--fg:#eaf0ff;--muted:#9aacbf;--rim:#1e2a45;--accent:#00e5ff;--hot:#ff4d6d;--gold:#ffcf7a
+  }
+  *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--fg);min-height:100dvh;display:flex;flex-direction:column}
+  header{padding:12px 16px;border-bottom:1px solid var(--rim);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  header h1{font-size:1.05rem;margin:0;color:var(--accent);letter-spacing:.3px}
+  header .tag{border:1px solid var(--rim);border-radius:10px;padding:6px 10px;background:linear-gradient(180deg,#141a2b,#0f1525);color:var(--muted)}
+  main{flex:1;display:grid;place-items:center;padding:12px}
+  .stage{position:relative;width:min(92vw,1200px);aspect-ratio:16/9;border:1px solid var(--rim);border-radius:14px;overflow:hidden;background:#000;box-shadow:0 0 0 1px #000 inset}
+  video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  canvas#paint{position:absolute;inset:0;width:100%;height:100%}
+  /* HUD overlay */
+  .hud{position:absolute;inset:0;pointer-events:none}
+  .hud .safe{position:absolute;inset:6%;border:1px solid rgba(255,255,255,.2)}
+  .hud .thirds{position:absolute;inset:0}
+  .hud .thirds::before,.hud .thirds::after,.hud .thirds span::before,.hud .thirds span::after{
+    content:"";position:absolute;background:rgba(255,255,255,.12)
+  }
+  .hud .thirds::before{left:33.33%;top:0;bottom:0;width:1px}
+  .hud .thirds::after{left:66.66%;top:0;bottom:0;width:1px}
+  .hud .thirds span::before{top:33.33%;left:0;right:0;height:1px}
+  .hud .thirds span::after{top:66.66%;left:0;right:0;height:1px}
+  .hud .center{position:absolute;inset:0;display:grid;place-items:center}
+  .hud .center i{width:10px;height:10px;border:1px solid rgba(255,255,255,.5);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset}
+  .rec{position:absolute;top:10px;left:12px;display:flex;align-items:center;gap:8px;font-weight:700}
+  .dot{width:10px;height:10px;border-radius:50%;background:transparent;outline:1px solid rgba(255,255,255,.4)}
+  .rec.live .dot{background:var(--hot);box-shadow:0 0 12px var(--hot)}
+  .topline{position:absolute;top:10px;right:12px;display:flex;gap:12px}
+  .badge{pointer-events:auto;border:1px solid var(--rim);background:rgba(10,13,20,.55);backdrop-filter:blur(6px);padding:6px 10px;border-radius:10px}
+  .badge strong{color:var(--gold)}
+  .footbar{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  label{font-size:.78rem;color:var(--muted)}
+  select,input[type=range],input[type=color],input[type=checkbox]{pointer-events:auto}
+  select,button,.pill{
+    border:1px solid var(--rim);border-radius:10px;padding:6px 10px;background:linear-gradient(180deg,#141a2b,#0f1525);color:var(--fg)
+  }
+  .pill{pointer-events:auto}
+  .meters{display:flex;gap:8px;align-items:center}
+  .meter{width:120px;height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset}
+  .meter > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#22d3ee,#a78bfa)}
+  #hist{width:160px;height:50px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid var(--rim)}
+  .controls{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  button{cursor:pointer}
+  button.primary{border-color:var(--accent);color:var(--accent)}
+  footer{padding:10px;text-align:center;color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+  <header>
+    <h1>P.O.P.S. DIGITAL CINEMA — XL 8K VV</h1>
+    <span class="tag">Global Shutter (software pipeline)</span>
+    <span class="tag">Offline‑first • Local slices</span>
+    <span class="tag">Virtual Production Ready*</span>
+  </header>
+
+  <main>
+    <div class="stage" id="stage">
+      <video id="vf" playsinline autoplay muted></video>
+      <canvas id="paint"></canvas>
+
+      <div class="hud" aria-hidden="true">
+        <div class="safe"></div>
+        <div class="thirds"><span></span></div>
+        <div class="center"><i></i></div>
+
+        <div class="rec" id="recLamp">
+          <div class="dot"></div><span id="recTimer">00:00:00</span>
+        </div>
+
+        <div class="topline">
+          <div class="badge"><strong id="fps">FPS—</strong></div>
+          <div class="badge">RES <strong id="resBadge">—</strong></div>
+          <div class="badge">ISO <strong id="isoBadge">AUTO</strong></div>
+          <div class="badge">WB <strong id="wbBadge">AUTO</strong></div>
+        </div>
+
+        <div class="footbar">
+          <div class="group">
+            <label for="mode">Mode</label>
+            <select id="mode" class="pill" title="Resolution preset (requests closest supported)">
+              <option value="8k">8K 120</option>
+              <option value="6k">6K 160</option>
+              <option value="2k">2K 600</option>
+              <option value="max" selected>Device Max</option>
+            </select>
+
+            <label for="nd">ND (stops)</label>
+            <input id="nd" type="range" min="0" max="7" step="0.1" value="0"/>
+
+            <label for="exp">Exposure</label>
+            <input id="exp" type="range" min="-2" max="2" step="0.1" value="0"/>
+
+            <label>Histogram</label>
+            <canvas id="hist"></canvas>
+          </div>
+
+          <div class="group">
+            <label><input type="checkbox" id="fcOn"> False‑Color</label>
+            <label for="fcOp">Opacity</label>
+            <input id="fcOp" type="range" min="0" max="1" step="0.05" value="0.6"/>
+            <label><input type="checkbox" id="pkOn"> Focus Peaking</label>
+            <label for="pkTh">Thresh</label>
+            <input id="pkTh" type="range" min="10" max="200" step="5" value="80"/>
+            <label for="pkCol">Color</label>
+            <input id="pkCol" type="color" value="#00ff85" />
+          </div>
+
+          <div class="meters">
+            <div class="meter"><i id="expMeter"></i></div>
+            <div class="meter"><i id="ndMeter"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="start" class="primary">🎥 Start Camera</button>
+      <button id="snap">📸 Still</button>
+      <button id="record">⏺️ Record</button>
+      <button id="download" disabled>💾 Download Last</button>
+      <button id="reset">♻️ Reset</button>
+    </div>
+  </main>
+
+  <footer>
+    Sidekick in light, guardian in time — frame by frame, story by story. • *Genlock/Phantom Track simulated for browser.*
+  </footer>
+
+<script>
+(async function(){
+  const vf = document.getElementById('vf');
+  const paint = document.getElementById('paint');
+  const pctx = paint.getContext('2d', { alpha: false }); // video + processing
+  const hist = document.getElementById('hist');
+  const hctx = hist.getContext('2d');
+
+  const btnStart = document.getElementById('start');
+  const btnSnap = document.getElementById('snap');
+  const btnRec  = document.getElementById('record');
+  const btnDl   = document.getElementById('download');
+  const btnReset= document.getElementById('reset');
+
+  const modeSel = document.getElementById('mode');
+  const ndSlider = document.getElementById('nd');
+  const expSlider= document.getElementById('exp');
+  const fpsBadge = document.getElementById('fps');
+  const resBadge = document.getElementById('resBadge');
+  const expMeter = document.getElementById('expMeter');
+  const ndMeter  = document.getElementById('ndMeter');
+  const recLamp  = document.getElementById('recLamp');
+  const recTimer = document.getElementById('recTimer');
+
+  const fcOn = document.getElementById('fcOn');
+  const fcOp = document.getElementById('fcOp');
+  const pkOn = document.getElementById('pkOn');
+  const pkTh = document.getElementById('pkTh');
+  const pkCol= document.getElementById('pkCol');
+
+  let stream=null, mediaRec=null, chunks=[], lastBlob=null;
+  let rafId=null, lastT=performance.now(), frameCount=0, fps=0;
+  let startTime=null, recInterval=null;
+
+  function presetToConstraints(preset){
+    const table = {
+      '8k': {width:{ideal:7680}, height:{ideal:4320}, frameRate:{ideal:120}},
+      '6k': {width:{ideal:6144}, height:{ideal:3160}, frameRate:{ideal:160}},
+      '2k': {width:{ideal:2048}, height:{ideal:1080}, frameRate:{ideal:600}},
+      'max':{width:{ideal:9999}, height:{ideal:9999}, frameRate:{ideal:120}}
+    };
+    return table[preset] || table.max;
+  }
+
+  async function startCamera(){
+    stopCamera();
+    const constraints = { video: presetToConstraints(modeSel.value), audio: false };
+    try{
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      vf.srcObject = stream;
+      await vf.play();
+      paint.width = vf.videoWidth;
+      paint.height= vf.videoHeight;
+      resBadge.textContent = `${vf.videoWidth}×${vf.videoHeight}`;
+      loop();
+    }catch(e){
+      alert('Camera unavailable or permission denied.\n' + e.message);
+    }
+  }
+
+  function stopCamera(){
+    if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  }
+
+  function loop(now=performance.now()){
+    rafId = requestAnimationFrame(loop);
+
+    // FPS calc
+    frameCount++;
+    if(now - lastT >= 500){
+      fps = Math.round((frameCount*1000)/(now-lastT));
+      frameCount = 0; lastT = now;
+      fpsBadge.textContent = `FPS ${fps}`;
+    }
+
+    // Draw live frame
+    pctx.drawImage(vf, 0, 0, paint.width, paint.height);
+
+    // Read pixels
+    const w = paint.width, h = paint.height;
+    const img = pctx.getImageData(0,0,w,h);
+    const data = img.data;
+
+    // Pipeline controls
+    const ndStops  = parseFloat(ndSlider.value);    // 0..7
+    const ev       = parseFloat(expSlider.value);   // -2..+2
+    const ndFactor = Math.pow(0.5, ndStops);
+    const expFactor= Math.pow(2, ev);
+
+    // Histogram bins
+    const bins = 64; const histo = new Uint32Array(bins);
+
+    // First pass: ND + EV + histogram (linear-ish)
+    for(let i=0;i<data.length;i+=4){
+      data[i]   = Math.min(255, data[i]  * ndFactor * expFactor);
+      data[i+1] = Math.min(255, data[i+1]* ndFactor * expFactor);
+      data[i+2] = Math.min(255, data[i+2]* ndFactor * expFactor);
+      const Y = (0.2627*data[i] + 0.6780*data[i+1] + 0.0593*data[i+2])|0;
+      histo[(Y>>2)]++;
+    }
+
+    // Optional: False Color overlay (exposure visualization)
+    if(fcOn.checked){
+      const alpha = parseFloat(fcOp.value); // 0..1
+      for(let i=0;i<data.length;i+=4){
+        const Y = (0.2627*data[i] + 0.6780*data[i+1] + 0.0593*data[i+2]); // 0..255
+        // Map luminance to false‑color scale (blue -> green -> yellow -> red -> white)
+        let r=0,g=0,b=0;
+        if(Y < 32){ r=0; g=0; b=255; }                   // deep shadows (blue)
+        else if(Y < 64){ r=0; g=128; b=255; }            // shadows (cyan)
+        else if(Y < 96){ r=0; g=200; b=100; }            // mid‑low (green)
+        else if(Y < 160){ r=220; g=220; b=0; }           // mids (yellow)
+        else if(Y < 220){ r=255; g=80; b=0; }            // highlights (red)
+        else { r=255; g=255; b=255; }                    // clipping (white)
+        // Alpha blend onto current pixel
+        data[i]   = (1-alpha)*data[i]   + alpha*r;
+        data[i+1] = (1-alpha)*data[i+1] + alpha*g;
+        data[i+2] = (1-alpha)*data[i+2] + alpha*b;
+      }
+    }
+
+    // Optional: Focus Peaking (Sobel edge magnitude over threshold)
+    if(pkOn.checked){
+      const thr = parseInt(pkTh.value,10); // 10..200
+      // Quick grayscale copy for Sobel
+      const gray = new Uint8ClampedArray(w*h);
+      for(let i=0,j=0;i<data.length;i+=4,++j){
+        gray[j] = (0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2])|0;
+      }
+      // Sobel kernels
+      const sobelX = [-1,0,1,-2,0,2,-1,0,1];
+      const sobelY = [-1,-2,-1,0,0,0,1,2,1];
+      const pkRGB = hexToRgb(pkCol.value);
+
+      // Edge pass (skip border)
+      for(let y=1;y<h-1;y+=1){
+        for(let x=1;x<w-1;x+=1){
+          const p = y*w + x;
+          // 3x3 neighborhood
+          let gx=0, gy=0, k=0;
+          for(let j=-1;j<=1;j++){
+            for(let i2=-1;i2<=1;i2++){
+              const v = gray[p + j*w + i2];
+              gx += v * sobelX[k];
+              gy += v * sobelY[k];
+              k++;
+            }
+          }
+          const mag = Math.sqrt(gx*gx + gy*gy);
+          if(mag > thr){
+            const idx = (p<<2);
+            // Screen‑like blend for peaking highlight
+            data[idx]   = 255 - (((255 - data[idx])   * (255 - pkRGB.r)) >> 8);
+            data[idx+1] = 255 - (((255 - data[idx+1]) * (255 - pkRGB.g)) >> 8);
+            data[idx+2] = 255 - (((255 - data[idx+2]) * (255 - pkRGB.b)) >> 8);
+          }
+        }
+      }
+    }
+
+    // Commit pixels back
+    pctx.putImageData(img,0,0);
+
+    // meters
+    ndMeter.style.width = `${Math.min(100, (ndStops/7)*100)}%`;
+    const expPct = Math.max(0, Math.min(1, (ev+2)/4));
+    expMeter.style.width = `${expPct*100}%`;
+
+    // histogram draw
+    drawHistogram(histo);
+  }
+
+  function drawHistogram(histo){
+    const w=hist.width, h=hist.height;
+    hctx.clearRect(0,0,w,h);
+    hctx.fillStyle='rgba(0,0,0,.35)'; hctx.fillRect(0,0,w,h);
+    const max = Math.max(...histo)||1;
+    const bw = w/histo.length;
+    for(let i=0;i<histo.length;i++){
+      const v = histo[i]/max, barH = v*h;
+      hctx.fillStyle='rgba(255,255,255,.85)';
+      hctx.fillRect(i*bw, h-barH, Math.max(1,bw-1), barH);
+    }
+    hctx.strokeStyle='rgba(255,255,255,.25)';
+    hctx.beginPath(); hctx.moveTo(w/2,0); hctx.lineTo(w/2,h); hctx.stroke();
+  }
+
+  // Recording (canvas capture — HUD baked in)
+  function startRecording(){
+    const fps = 30;
+    const stream = paint.captureStream(fps);
+    mediaRec = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+    chunks = [];
+    mediaRec.ondataavailable = e=> e.data.size && chunks.push(e.data);
+    mediaRec.onstop = ()=>{
+      lastBlob = new Blob(chunks, {type:'video/webm'});
+      btnDl.disabled = false;
+    };
+    mediaRec.start();
+    recLamp.classList.add('live');
+    startTime = Date.now();
+    recInterval = setInterval(updateTimer, 500);
+  }
+  function stopRecording(){
+    if(mediaRec && mediaRec.state!=='inactive'){ mediaRec.stop(); }
+    mediaRec=null;
+    recLamp.classList.remove('live');
+    clearInterval(recInterval);
+    updateTimer(true);
+  }
+  function updateTimer(final=false){
+    const t = final ? 0 : (Date.now()-startTime);
+    const s = Math.floor(t/1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
+    recTimer.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  }
+
+  // Stills (processed frame)
+  function captureStill(){
+    const a = document.createElement('a');
+    a.download = `POPS_XL8KVV_${Date.now()}.png`;
+    a.href = paint.toDataURL('image/png');
+    a.click();
+  }
+  function downloadLast(){
+    if(!lastBlob) return;
+    const a = document.createElement('a');
+    a.download = `POPS_XL8KVV_${Date.now()}.webm`;
+    a.href = URL.createObjectURL(lastBlob);
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+  }
+
+  // UI bindings
+  document.getElementById('start').addEventListener('click', startCamera);
+  document.getElementById('snap').addEventListener('click', captureStill);
+  document.getElementById('download').addEventListener('click', downloadLast);
+  document.getElementById('reset').addEventListener('click', ()=>{ stopRecording(); stopCamera(); vf.srcObject=null; });
+  modeSel.addEventListener('change', startCamera);
+
+  document.getElementById('record').addEventListener('click', ()=>{
+    if(!mediaRec || mediaRec.state==='inactive'){ startRecording(); document.getElementById('record').textContent='⏹ Stop'; }
+    else{ stopRecording(); document.getElementById('record').textContent='⏺️ Record'; }
+  });
+
+  // Resize handling
+  const stage = document.getElementById('stage');
+  const ro = new ResizeObserver(()=>{
+    hist.width = Math.floor(160 * devicePixelRatio);
+    hist.height= Math.floor(50  * devicePixelRatio);
+  });
+  ro.observe(stage);
+
+  // Helpers
+  function hexToRgb(hex){
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return m ? { r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)} : {r:0,g:255,b:128};
+  }
+})();
+</script>
+</body>
+</html>
